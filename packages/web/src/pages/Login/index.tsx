@@ -2,12 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { meAtom } from "@/store";
-import { useSetAtom } from "jotai";
 import { useNavigate } from "react-router";
 
 export default function Login() {
-  const setMe = useSetAtom(meAtom)
   const navigate = useNavigate()
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -18,9 +15,7 @@ export default function Login() {
 
     const username = formData.get("username") as string
 
-    setMe(prev => ({ ...prev, username }))
-
-    navigate("/map")
+    navigate("/map?username=" + username)
   }
 
   return (
@@ -41,6 +36,7 @@ export default function Login() {
                     <Label htmlFor="username">Username</Label>
                     <Input
                       id="username"
+                      name="username"
                       required
                     />
                   </div>

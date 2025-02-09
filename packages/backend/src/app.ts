@@ -1,26 +1,33 @@
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { Message } from '../../web/src/store';
+import { BackendUser } from './database';
 
-export type Alert = {
-  deviceId: number
-  deviceName: number
-  measure: number
-  measureType: string
-  date: Date
-}
 
 interface ServerToClientEvents {
-  alert: (alert: Alert) => void
+  userPositionChanged: (user: BackendUser) => void
+  initialUsers: (users: BackendUser[]) => void
+  userDisconnected: (userId: string) => void
+  message: (message: Message) => void
 }
 
 interface ClientToServerEvents {
-  alert: (alert: Alert) => void
+  changePosition: (position: { lat: number, lng: number }) => void
+  message: (message: Message) => void
+  // play: ({ x, y }: { x: number, y: number }) => void
+  // giveup: () => void
 }
+
 
 interface InterServerEvents {
 }
 
 interface SocketData {
+  username: string
+  position: {
+    lat: number
+    lng: number
+  }
 }
 
 export const app = createServer()

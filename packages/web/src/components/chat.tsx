@@ -11,16 +11,11 @@ import {
 import { cn } from "@/lib/utils"
 
 import { Input } from "@/components/ui/input"
-import { meAtom, usersAtom } from "@/store"
+import { socket } from "@/services/socket"
+import { meAtom, Message, usersAtom } from "@/store"
 import { useAtom, useAtomValue } from "jotai"
 
 type Props = React.HTMLAttributes<HTMLDivElement> & {
-}
-
-type Message = {
-  sessionId: string | null
-  role: "player" | "system"
-  content: string
 }
 
 export function Chat({ className, ...rest }: Props) {
@@ -40,42 +35,56 @@ export function Chat({ className, ...rest }: Props) {
     const form = e.currentTarget
     const formData = new FormData(form)
 
-    const message = formData.get("message") as string
+    const messageContent = formData.get("message") as string
 
-    if (message.length === 0 || activeChatUser == null) return
+    if (messageContent.length === 0 || activeChatUser == null) return
+
+    const message = {
+      id: Math.random().toString(),
+      from: me.id,
+      to: activeChatUser.id,
+      content: messageContent,
+      createdAt: new Date().toISOString()
+    }
 
     setUsers(prev => {
-      const newUsers = [...prev]
-      const userIndex = newUsers.findIndex(user => user.id === chatId)
+      const newUsers = prev.map(user => {
+        if (user.id === activeChatUser.id) {
+          return {
+            ...user,
+            messages: [...user.messages, message]
+          }
+        }
 
-      newUsers[userIndex].messages.push({
-        id: crypto.randomUUID(),
-        userId: me.id,
-        content: message,
-        status: "sent",
-        createdAt: new Date().toISOString()
+        return user
       })
-
       return newUsers
     })
 
-    // TODO: Send socket event to update messages
+    socket.emit("message", message)
   }
 
-  // useEffect(() => {
-  //   const sub = trpc.onGameChange.subscribe({ roomId, sessionId }, {
-  //     onData(data) {
-  //       setMessages(data.room.messages)
-  //     },
-  //     onError(err) {
-  //       console.error("error", err);
-  //     },
-  //   })
+  useEffect(() => {
+    socket.on('message', (message: Message) => {
+      setUsers(prev => {
+        const newUsers = prev.map(user => {
+          if (user.id === message.from) {
+            return {
+              ...user,
+              messages: [...user.messages, message]
+            }
+          }
 
-  //   return () => {
-  //     sub.unsubscribe()
-  //   };
-  // }, []);
+          return user
+        })
+        return newUsers
+      })
+    });
+
+    return () => {
+      socket.off('message');
+    };
+  }, [setUsers]);
 
   useEffect(() => {
     if (chatRef.current) {
@@ -106,8 +115,8 @@ export function Chat({ className, ...rest }: Props) {
               key={index}
               className={cn(
                 "flex w-max max-w-[75%] flex-col gap-2 rounded-lg px-3 py-2 text-sm",
-                message.userId === me.id && "ml-auto bg-primary text-primary-foreground",
-                message.userId !== me.id && "bg-muted"
+                message.from === me.id && "ml-auto bg-primary text-primary-foreground",
+                message.from !== me.id && "bg-[#2563EB] text-[#0f172a]"
               )}
             >
               {message.content}
@@ -122,11 +131,12 @@ export function Chat({ className, ...rest }: Props) {
         >
           <Input
             id="message"
+            name="message"
             placeholder="Type your message..."
             className="flex-1"
             autoComplete="off"
           />
-          <Button type="submit" size="icon">
+          <Button type="submit" size="icon" disabled={activeChatUser == null}>
             <Send className="h-4 w-4" />
             <span className="sr-only">Send</span>
           </Button>

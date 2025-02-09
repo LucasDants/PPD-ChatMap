@@ -1,23 +1,24 @@
-import { atom } from "jotai";
+import { atom, createStore } from "jotai";
 
-type User = {
-  id: "",
+export type Message = {
+  id: string
+  from: string
+  to: string
+  content: string
+  createdAt: string
+}
+
+export type User = {
+  id: string,
   username: string
   position: {
     lat: number
     lng: number
   }
-  hasNewMessages: boolean
-  messages: {
-    id: string
-    userId: string
-    content: string
-    status: "sent" | "received" | "delivered" | "read"
-    createdAt: string
-  }[]
+  messages: Message[]
 }
 
-export const meAtom = atom({ 
+export const meAtom = atom({
   id: "",
   username: "",
   position: {
@@ -28,3 +29,5 @@ export const meAtom = atom({
 })
 
 export const usersAtom = atom<User[]>([])
+
+export const store = createStore()
