@@ -2,7 +2,6 @@ import client, { Channel, Connection } from "amqplib";
 
 type HandlerCB = (msg: string) => any;
 
-
 class RabbitMQConnectionSubscriber {
   connection!: Connection;
   channel!: Channel;
@@ -32,28 +31,38 @@ class RabbitMQConnectionSubscriber {
   }
 
 
-  async consume(queue: string, handleIncomingNotification: HandlerCB) {
+  async consume(queueName: string, handleIncomingNotification: HandlerCB) {
 
-    await this.channel.assertQueue(queue, {
+    const queue = await this.channel.assertQueue(queueName, {
       durable: true,
     });
 
+    if (queue.messageCount === 0) {
+      return console.log(`No messages in ${queueName}`);
+    }
+
+    console.log(`🚀 Waiting for messages in ${queueName}. To exit press CTRL+C`);
     this.channel.consume(
-      queue,
+      queueName,
       (msg) => {
         {
           if (!msg) {
             return console.error(`Invalid incoming message`);
           }
+          console.log(`📩 Received message from ${queueName}`);
           handleIncomingNotification(msg?.content?.toString());
           this.channel.ack(msg);
+          queue.messageCount -= 1;
+          console.log(`Message count in ${queueName} is ${queue.messageCount}`);
+          if (queue.messageCount === 0) {
+            this.channel.cancel(msg.fields.consumerTag);
+          }
         }
       },
       {
         noAck: false,
       }
     );
-
   }
 }
 

@@ -37,6 +37,20 @@ export function deleteUser(id: string) {
   return users
 }
 
+export function getNearbyUsers(userId: string, position: { lat: number, lng: number }) {
+  const nearbyUsers = users.filter(u => {
+    if (u.id === userId) {
+      return false
+    }
+
+    const distance = haversineDistance(position, u.position)
+
+    return distance <= 200
+  })
+
+  return nearbyUsers
+}
+
 export function calculateUsersDistance(userId1: string, userId2: string) {
   const user1 = users.find(u => u.id === userId1)
   const user2 = users.find(u => u.id === userId2)

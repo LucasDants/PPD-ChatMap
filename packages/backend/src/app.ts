@@ -14,8 +14,6 @@ interface ServerToClientEvents {
 interface ClientToServerEvents {
   changePosition: (position: { lat: number, lng: number }) => void
   message: (message: Message) => void
-  // play: ({ x, y }: { x: number, y: number }) => void
-  // giveup: () => void
 }
 
 

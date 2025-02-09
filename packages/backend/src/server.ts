@@ -1,15 +1,10 @@
 import { app, io } from "./app";
-import { calculateUsersDistance, getUsers, setUser } from "./database";
+import { calculateUsersDistance, getNearbyUsers, getUsers, setUser } from "./database";
+import { mqConnectionPublisher } from "./publisher";
+import { mqConnectionSubscriber } from "./subscriber";
 
-// mqConnectionPublisher.connect()
-// mqConnectionSubscriber.connect()
-
-// io.use(async (_, next) => {
-//   await mqConnectionPublisher.connect()
-//   await mqConnectionSubscriber.connect()
-
-//   return next()
-// })
+mqConnectionPublisher.connect()
+mqConnectionSubscriber.connect()
 
 io.use((socket, next) => {
   const position: { lat: number, lng: number } = socket.handshake.auth.position
@@ -42,7 +37,7 @@ io.on('connection', socket => {
   socket.emit("initialUsers", getUsers(socket.id))
 
   // listeners
-  socket.on('message', (message) => {
+  socket.on('message', async (message) => {
     const distance = calculateUsersDistance(message.from, message.to)
 
     if (distance == null) {
@@ -50,7 +45,7 @@ io.on('connection', socket => {
     }
 
     if (distance > 200) {
-      //TODO ADD QUEUE
+      await mqConnectionPublisher.sendToQueue(`messages:${message.from}:${message.to}`, message)
       return
     }
 
@@ -66,6 +61,17 @@ io.on('connection', socket => {
       id: socket.id,
       username: socket.data.username,
       position: position
+    })
+
+    const nearbyUsers = getNearbyUsers(socket.id, position)
+
+    nearbyUsers.forEach(user => {
+      mqConnectionSubscriber.consume(`messages:${user.id}:${socket.id}`, (msg) => {
+        socket.emit('message', JSON.parse(msg))
+      })
+      mqConnectionSubscriber.consume(`messages:${socket.id}:${user.id}`, (msg) => {
+        socket.emit('message', JSON.parse(msg))
+      })
     })
   })
 

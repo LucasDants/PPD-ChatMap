@@ -61,6 +61,7 @@ export function Chat({ className, ...rest }: Props) {
       return newUsers
     })
 
+    form.reset()
     socket.emit("message", message)
   }
 

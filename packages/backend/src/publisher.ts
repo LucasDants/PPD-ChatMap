@@ -31,7 +31,7 @@ class RabbitMQConnectionPublisher {
       if (!this.channel) {
         await this.connect();
       }
-
+      console.log("Sending message to queue", queue);
       this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
     } catch (error) {
       console.error(error);
