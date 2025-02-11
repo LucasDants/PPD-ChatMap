@@ -70,7 +70,7 @@ io.on('connection', socket => {
         socket.emit('message', JSON.parse(msg))
       })
       mqConnectionSubscriber.consume(`messages:${socket.id}:${user.id}`, (msg) => {
-        socket.emit('message', JSON.parse(msg))
+        socket.to(user.id).emit('message', JSON.parse(msg))
       })
     })
   })
